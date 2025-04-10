@@ -40,15 +40,22 @@ class ApiService {
   }
 
   Future<Child> updateChild(Child child) async {
+    print('Updating child with request:');
+    print('URL: $baseUrl/children/${child.id}/');
+    print('Headers: {"Content-Type": "application/json"}');
+    print('Body: ${json.encode(child.toJson())}');
+    
     final response = await http.put(
-      Uri.parse('$baseUrl/children/${child.id}/'),
+      Uri.parse('$baseUrl/children/${child.id}'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(child.toJson()),
     );
+    print('Update child response status: ${response.statusCode}');
+    print('Update child response body: ${response.body}');
     if (response.statusCode == 200) {
       return Child.fromJson(json.decode(response.body));
     }
-    throw Exception('Failed to update child');
+    throw Exception('Failed to update child: ${response.body}');
   }
 
   Future<void> deleteChild(int childId) async {
@@ -77,7 +84,7 @@ class ApiService {
 
   Future<Measurement> createMeasurement(Measurement measurement) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/measurements'),
+      Uri.parse('$baseUrl/measurements/'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(measurement.toJson()),
     );
@@ -89,7 +96,7 @@ class ApiService {
 
   Future<Measurement> updateMeasurement(Measurement measurement) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/measurements/${measurement.id}'),
+      Uri.parse('$baseUrl/measurements/${measurement.id}/'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(measurement.toJson()),
     );
@@ -101,7 +108,7 @@ class ApiService {
 
   Future<void> deleteMeasurement(int id) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/measurements/$id'),
+      Uri.parse('$baseUrl/measurements/$id/'),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to delete measurement');
@@ -122,7 +129,7 @@ class ApiService {
 
   // Stats API calls
   Future<List<Stats>> getHeightStats() async {
-    final response = await http.get(Uri.parse('$baseUrl/stats/height'));
+    final response = await http.get(Uri.parse('$baseUrl/stats/height/'));
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
       return data.map((json) => Stats.fromJson(json)).toList();
@@ -131,7 +138,7 @@ class ApiService {
   }
 
   Future<List<Stats>> getWeightStats() async {
-    final response = await http.get(Uri.parse('$baseUrl/stats/weight'));
+    final response = await http.get(Uri.parse('$baseUrl/stats/weight/'));
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
       return data.map((json) => Stats.fromJson(json)).toList();
