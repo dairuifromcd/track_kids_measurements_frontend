@@ -64,7 +64,7 @@ class _MeasurementFormScreenState extends State<MeasurementFormScreen> {
       final measurement = Measurement(
         id: widget.measurement?.id ?? 0,
         childId: widget.child.id,
-        date: _date,
+        date: DateTime(_date.year, _date.month, _date.day),
         height: double.parse(_heightController.text),
         weight: double.parse(_weightController.text),
       );

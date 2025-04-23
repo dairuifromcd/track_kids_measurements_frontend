@@ -41,7 +41,7 @@ class ApiService {
 
   Future<Child> updateChild(Child child) async {
     print('Updating child with request:');
-    print('URL: $baseUrl/children/${child.id}/');
+    print('URL: $baseUrl/children/${child.id}');
     print('Headers: {"Content-Type": "application/json"}');
     print('Body: ${json.encode(child.toJson())}');
     
@@ -70,10 +70,11 @@ class ApiService {
   // Measurement API calls
   Future<List<Measurement>> getMeasurements(int childId, DateTime startDate, [DateTime? endDate]) async {
     final queryParams = {
+      'child_id': childId.toString(),
       'start_date': startDate.toIso8601String().split('T')[0],
       if (endDate != null) 'end_date': endDate.toIso8601String().split('T')[0],
     };
-    final uri = Uri.parse('$baseUrl/measurements/$childId').replace(queryParameters: queryParams);
+    final uri = Uri.parse('$baseUrl/measurements/').replace(queryParameters: queryParams);
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
@@ -83,11 +84,18 @@ class ApiService {
   }
 
   Future<Measurement> createMeasurement(Measurement measurement) async {
+    print('Creating measurement with request:');
+    print('URL: $baseUrl/measurements/');
+    print('Headers: {"Content-Type": "application/json"}');
+    print('Body: ${json.encode(measurement.toJson())}');
+    
     final response = await http.post(
       Uri.parse('$baseUrl/measurements/'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(measurement.toJson()),
     );
+    print('Create measurement response status: ${response.statusCode}');
+    print('Create measurement response body: ${response.body}');
     if (response.statusCode == 200) {
       return Measurement.fromJson(json.decode(response.body));
     }
@@ -108,19 +116,20 @@ class ApiService {
 
   Future<void> deleteMeasurement(int id) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/measurements/$id/'),
+      Uri.parse('$baseUrl/measurements/$id'),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to delete measurement');
     }
   }
 
-  Future<void> deleteMeasurements(int childId, DateTime startDate, [DateTime? endDate]) async {
+  Future<void> deleteMeasurements(int childId, DateTime startDate, DateTime endDate) async {
     final queryParams = {
+      'child_id': childId.toString(),
       'start_date': startDate.toIso8601String().split('T')[0],
-      if (endDate != null) 'end_date': endDate.toIso8601String().split('T')[0],
+      'end_date': endDate.toIso8601String().split('T')[0],
     };
-    final uri = Uri.parse('$baseUrl/measurements/$childId').replace(queryParameters: queryParams);
+    final uri = Uri.parse('$baseUrl/measurements/').replace(queryParameters: queryParams);
     final response = await http.delete(uri);
     if (response.statusCode != 200) {
       throw Exception('Failed to delete measurements');

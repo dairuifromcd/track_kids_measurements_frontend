@@ -17,7 +17,7 @@ class Measurement {
     return Measurement(
       id: json['id'],
       childId: json['child_id'],
-      date: DateTime.parse(json['date']),
+      date: DateTime.parse(json['measure_date']),
       height: json['height'].toDouble(),
       weight: json['weight'].toDouble(),
     );
@@ -27,7 +27,7 @@ class Measurement {
     return {
       'id': id,
       'child_id': childId,
-      'date': date.toIso8601String(),
+      'measure_date': date.toIso8601String(),
       'height': height,
       'weight': weight,
     };

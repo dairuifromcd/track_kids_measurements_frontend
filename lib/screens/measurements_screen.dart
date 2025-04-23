@@ -17,11 +17,25 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
   Child? _selectedChild;
   List<Measurement> _measurements = [];
   bool _isLoading = true;
+  late int _selectedYear;
+  List<int> _availableYears = [];
 
   @override
   void initState() {
     super.initState();
+    _selectedYear = DateTime.now().year;
     _loadChildren();
+  }
+
+  void _updateAvailableYears() {
+    if (_selectedChild == null) return;
+    final currentYear = DateTime.now().year;
+    final birthYear = _selectedChild!.dateOfBirth.year;
+    _availableYears = List.generate(
+      currentYear - birthYear + 1,
+      (index) => currentYear - index,
+    );
+    _selectedYear = _availableYears.first;
   }
 
   Future<void> _loadChildren() async {
@@ -32,6 +46,7 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
         _isLoading = false;
         if (children.isNotEmpty && _selectedChild == null) {
           _selectedChild = children.first;
+          _updateAvailableYears();
           _loadMeasurements();
         }
       });
@@ -46,7 +61,9 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final measurements = await _apiService.getMeasurements(_selectedChild!.id, DateTime.now());
+      final startDate = DateTime(_selectedYear, 1, 1);
+      final endDate = DateTime(_selectedYear, 12, 31);
+      final measurements = await _apiService.getMeasurements(_selectedChild!.id, startDate, endDate);
       setState(() {
         _measurements = measurements;
         _isLoading = false;
@@ -58,14 +75,37 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
   }
 
   Future<void> _deleteMeasurement(int id) async {
-    try {
-      await _apiService.deleteMeasurement(id);
-      await _loadMeasurements();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Measurement deleted successfully')),
-      );
-    } catch (e) {
-      _showError('Error deleting measurement: ${e.toString()}');
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content: const Text('Are you sure you want to delete this measurement? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        await _apiService.deleteMeasurement(id);
+        await _loadMeasurements();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Measurement deleted successfully')),
+        );
+      } catch (e) {
+        _showError('Error deleting measurement: ${e.toString()}');
+      }
     }
   }
 
@@ -86,21 +126,52 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
           if (_children.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: DropdownButton<Child>(
-                value: _selectedChild,
-                isExpanded: true,
-                items: _children.map((Child child) {
-                  return DropdownMenuItem<Child>(
-                    value: child,
-                    child: Text(child.name),
-                  );
-                }).toList(),
-                onChanged: (Child? child) {
-                  setState(() {
-                    _selectedChild = child;
-                  });
-                  _loadMeasurements();
-                },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButton<Child>(
+                      value: _selectedChild,
+                      isExpanded: true,
+                      items: _children.map((Child child) {
+                        return DropdownMenuItem<Child>(
+                          value: child,
+                          child: Text(child.name),
+                        );
+                      }).toList(),
+                      onChanged: (Child? child) {
+                        setState(() {
+                          _selectedChild = child;
+                          if (child != null) {
+                            _updateAvailableYears();
+                          }
+                        });
+                        _loadMeasurements();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  if (_selectedChild != null)
+                    Expanded(
+                      child: DropdownButton<int>(
+                        value: _selectedYear,
+                        isExpanded: true,
+                        items: _availableYears.map((int year) {
+                          return DropdownMenuItem<int>(
+                            value: year,
+                            child: Text(year.toString()),
+                          );
+                        }).toList(),
+                        onChanged: (int? year) {
+                          if (year != null) {
+                            setState(() {
+                              _selectedYear = year;
+                            });
+                            _loadMeasurements();
+                          }
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
           Expanded(
@@ -119,11 +190,33 @@ class _MeasurementsScreenState extends State<MeasurementsScreen> {
                             subtitle: Text(
                               'Height: ${measurement.height}cm, Weight: ${measurement.weight}kg',
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () async {
-                                await _deleteMeasurement(measurement.id);
-                              },
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MeasurementFormScreen(
+                                          child: _selectedChild!,
+                                          measurement: measurement,
+                                        ),
+                                      ),
+                                    );
+                                    if (result == true) {
+                                      _loadMeasurements();
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () async {
+                                    await _deleteMeasurement(measurement.id);
+                                  },
+                                ),
+                              ],
                             ),
                           );
                         },

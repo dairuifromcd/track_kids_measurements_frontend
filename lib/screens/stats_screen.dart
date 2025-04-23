@@ -46,7 +46,10 @@ class _StatsScreenState extends State<StatsScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final measurements = await _apiService.getMeasurements(_selectedChild!.id, DateTime.now());
+      // For stats, we want to show all measurements from birth to present
+      final startDate = _selectedChild!.dateOfBirth;
+      final endDate = DateTime.now();
+      final measurements = await _apiService.getMeasurements(_selectedChild!.id, startDate, endDate);
       setState(() {
         _measurements = measurements;
         _isLoading = false;
