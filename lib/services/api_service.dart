@@ -104,7 +104,7 @@ class ApiService {
 
   Future<Measurement> updateMeasurement(Measurement measurement) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/measurements/${measurement.id}/'),
+      Uri.parse('$baseUrl/measurements/${measurement.id}'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(measurement.toJson()),
     );
